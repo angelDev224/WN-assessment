@@ -74,8 +74,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Checking access to cluster API server..."
-          kubectl cluster-info
+          echo "Checking namespace-scoped Kubernetes access..."
+          kubectl auth can-i get pods -n worknomads
           kubectl get namespace worknomads >/dev/null 2>&1 || echo "Namespace worknomads not found yet (will be created)."
 
       - name: Apply namespace and config

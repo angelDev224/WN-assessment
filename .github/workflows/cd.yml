@@ -140,6 +140,12 @@ jobs:
             --from-literal=MINIO_SECRET_KEY="${MINIO_SECRET_KEY}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Apply infrastructure services
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl apply -f k8s/infra/platform-services.yaml
+
       - name: Apply secrets guidance (optional)
         shell: bash
         run: |

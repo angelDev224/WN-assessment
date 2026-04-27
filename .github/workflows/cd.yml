@@ -139,7 +139,15 @@ jobs:
         run: |
           set -euo pipefail
           for svc in auth-service submission-service classifier-service admin-service api-gateway; do
-            kubectl rollout status "deployment/${svc}" -n worknomads --timeout=180s
+            if ! kubectl rollout status "deployment/${svc}" -n worknomads --timeout=600s; then
+              echo "::error::Rollout failed for deployment/${svc}. Collecting diagnostics..."
+              kubectl get pods -n worknomads -o wide || true
+              kubectl describe deployment "${svc}" -n worknomads || true
+              kubectl describe pods -n worknomads -l "app=${svc}" || true
+              kubectl logs -n worknomads "deployment/${svc}" --tail=200 || true
+              kubectl get events -n worknomads --sort-by=.lastTimestamp | tail -n 50 || true
+              exit 1
+            fi
           done
 
       - name: Verify deployment

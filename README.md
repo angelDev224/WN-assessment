@@ -27,6 +27,7 @@ Browser
           Redis                           Refresh token blacklist / cache
 ```
 
+
 Architecture diagram source is available at `docs/architecture.drawio` (open in draw.io/diagrams.net).
 
 ### Services

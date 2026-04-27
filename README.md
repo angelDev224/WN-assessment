@@ -56,6 +56,7 @@ Architecture diagram source is available at `docs/architecture.drawio` (open in 
 ### Prerequisites
 - Docker ≥ 24 and Docker Compose v2
 
+
 ### 1. Configure
 
 ```bash

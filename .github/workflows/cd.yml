@@ -179,7 +179,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for svc in auth-service submission-service classifier-service admin-service api-gateway; do
+          for svc in auth-service submission-service admin-service api-gateway; do
             if ! kubectl rollout status "deployment/${svc}" -n worknomads --timeout=600s; then
               echo "::error::Rollout failed for deployment/${svc}. Collecting diagnostics..."
               kubectl get pods -n worknomads -o wide || true

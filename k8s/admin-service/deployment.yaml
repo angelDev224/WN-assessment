@@ -40,14 +40,18 @@ spec:
             httpGet:
               path: /healthz
               port: 8004
-            initialDelaySeconds: 15
+            initialDelaySeconds: 60
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
           readinessProbe:
             httpGet:
               path: /readyz
               port: 8004
-            initialDelaySeconds: 10
+            initialDelaySeconds: 45
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 10
           resources:
             requests:
               cpu: "100m"

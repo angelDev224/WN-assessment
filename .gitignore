@@ -41,5 +41,5 @@ secrets/
 *.pem
 *.key
 *.crt
-
+requirements.md
 actions-runner/

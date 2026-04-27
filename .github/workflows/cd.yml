@@ -1,4 +1,4 @@
-name: CD — Deploy to Kubernetes
+name: CD - Deploy to Kubernetes
 
 on:
   push:
@@ -11,16 +11,16 @@ env:
 jobs:
   deploy:
     name: Deploy
-    # Private cluster deploys require network reachability from the runner.
     runs-on: [self-hosted, linux, k8s]
-    # Environment-level secrets in "production" take precedence over repo secrets.
     environment: production
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
       - name: Set image tag
         id: tag
-        run: echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Preflight kubeconfig secret requirements
         shell: bash
@@ -44,11 +44,13 @@ jobs:
             KCFG="$KUBE_CONFIG_SECRET"
             SOURCE="KUBE_CONFIG"
           fi
+
           if [ -z "$KCFG" ]; then
             echo "::error::Missing kubeconfig secret for production deploy."
             echo "::error::Set KUBECONFIG (preferred) or KUBE_CONFIG in GitHub Environment: production."
             exit 1
           fi
+
           echo "::notice::Using ${SOURCE} secret for kubectl context."
           {
             echo "kubeconfig<<EOF"
@@ -71,38 +73,49 @@ jobs:
           kubectl get namespace worknomads >/dev/null 2>&1 || echo "Namespace worknomads not found yet (will be created)."
 
       - name: Apply namespace and config
+        shell: bash
         run: |
+          set -euo pipefail
           kubectl apply -f k8s/namespace.yaml
           kubectl apply -f k8s/infra/configmap.yaml
 
-      - name: Apply secrets (via sealed-secrets or manual pre-deployment)
+      - name: Apply secrets guidance
+        shell: bash
         run: |
           echo "Secrets should be managed via Sealed Secrets or External Secrets Operator."
           echo "Run: kubectl apply -f k8s/infra/secrets.yaml  (DO NOT commit real values)"
 
       - name: Update image tags in manifests
+        shell: bash
         run: |
-          TAG=${{ steps.tag.outputs.TAG }}
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.TAG }}"
           SERVICES="auth-service submission-service classifier-service admin-service api-gateway"
           for svc in $SERVICES; do
             IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${svc}:${TAG}"
-            sed -i "s|ghcr.io/YOUR_ORG/worknomads-${svc}:latest|${IMAGE}|g" k8s/${svc}/deployment.yaml
+            sed -i "s|ghcr.io/YOUR_ORG/worknomads-${svc}:latest|${IMAGE}|g" "k8s/${svc}/deployment.yaml"
           done
 
       - name: Deploy services
+        shell: bash
         run: |
+          set -euo pipefail
           for svc in auth-service submission-service classifier-service admin-service api-gateway; do
-            kubectl apply -f k8s/${svc}/
+            kubectl apply -f "k8s/${svc}/"
           done
 
       - name: Apply ingress
+        shell: bash
         run: kubectl apply -f k8s/api-gateway/ingress.yaml
 
       - name: Wait for rollouts
+        shell: bash
         run: |
-          for svc in auth-service submission-service admin-service api-gateway; do
-            kubectl rollout status deployment/${svc} -n worknomads --timeout=180s
+          set -euo pipefail
+          for svc in auth-service submission-service classifier-service admin-service api-gateway; do
+            kubectl rollout status "deployment/${svc}" -n worknomads --timeout=180s
           done
 
       - name: Verify deployment
+        shell: bash
         run: kubectl get pods -n worknomads

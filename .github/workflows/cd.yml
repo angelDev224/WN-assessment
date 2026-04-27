@@ -112,11 +112,39 @@ jobs:
           kubectl wait --for=condition=available deployment/keda-operator -n keda --timeout=180s
           kubectl get pods -n keda
 
-      - name: Apply secrets guidance
+      - name: Create or update worknomads runtime secret
+        shell: bash
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for secret_name in POSTGRES_PASSWORD JWT_SECRET_KEY RABBITMQ_PASSWORD MINIO_SECRET_KEY; do
+            if [ -z "${!secret_name:-}" ]; then
+              echo "::error::Missing required GitHub Environment secret: ${secret_name}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::Populate required secrets in GitHub Environment: production."
+            exit 1
+          fi
+
+          kubectl -n worknomads create secret generic worknomads-secrets \
+            --from-literal=POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+            --from-literal=JWT_SECRET_KEY="${JWT_SECRET_KEY}" \
+            --from-literal=RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD}" \
+            --from-literal=MINIO_SECRET_KEY="${MINIO_SECRET_KEY}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply secrets guidance (optional)
         shell: bash
         run: |
-          echo "Secrets should be managed via Sealed Secrets or External Secrets Operator."
-          echo "Run: kubectl apply -f k8s/infra/secrets.yaml  (DO NOT commit real values)"
+          echo "CD now creates/updates worknomads-secrets from GitHub Environment secrets."
+          echo "For Sealed Secrets / External Secrets setups, adapt this workflow or replace this step."
 
       - name: Update image tags in manifests
         shell: bash

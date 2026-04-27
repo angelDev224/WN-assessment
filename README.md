@@ -205,6 +205,11 @@ Before running `.github/workflows/cd.yml` against a cluster, ensure:
 
 - A reachable Kubernetes API from the selected runner (`self-hosted` for private networks).
 - Environment secret `KUBECONFIG` (or fallback `KUBE_CONFIG`) is configured in GitHub `production` environment.
+- Required GitHub `production` environment secrets for runtime secret generation are configured:
+  - `POSTGRES_PASSWORD`: DB password used by service connection strings.
+  - `JWT_SECRET_KEY`: signing key for auth tokens.
+  - `RABBITMQ_PASSWORD`: broker password for async classification queue.
+  - `MINIO_SECRET_KEY`: object-storage secret key used by upload/classifier flows.
 - KEDA CRDs/controllers are available. The CD workflow installs/upgrades KEDA automatically and verifies:
   - `scaledobjects.keda.sh` CRD exists.
   - `keda-operator` deployment is available in namespace `keda`.

@@ -56,7 +56,6 @@ Architecture diagram source is available at `docs/architecture.drawio` (open in 
 ### Prerequisites
 - Docker ≥ 24 and Docker Compose v2
 
-
 ### 1. Configure
 
 ```bash
@@ -197,6 +196,18 @@ done
 |---|---|---|
 | `requirements.txt` | Docker (`python:3.12-slim`) | Full runtime deps including `asyncpg`, `aio-pika`, `miniopy-async` |
 | `requirements-test.txt` | Local dev (any Python) | Pure-Python/pre-built only; `asyncpg` → `aiosqlite`; `passlib` → `bcrypt` direct |
+
+---
+
+## Kubernetes CD Prerequisites
+
+Before running `.github/workflows/cd.yml` against a cluster, ensure:
+
+- A reachable Kubernetes API from the selected runner (`self-hosted` for private networks).
+- Environment secret `KUBECONFIG` (or fallback `KUBE_CONFIG`) is configured in GitHub `production` environment.
+- KEDA CRDs/controllers are available. The CD workflow installs/upgrades KEDA automatically and verifies:
+  - `scaledobjects.keda.sh` CRD exists.
+  - `keda-operator` deployment is available in namespace `keda`.
 
 ---
 
